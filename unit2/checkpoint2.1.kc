@@ -9,7 +9,7 @@ const char* COLS = 0xd800;
 const char BLACK = 0;
 const char WHITE = 1;
 // I add a piece of my FANinto the output
-char[] MESSAGE = "hello world!";
+char[] MESSAGE = "hello world!qin0075";
 
 void main(){
 	//wow main method
