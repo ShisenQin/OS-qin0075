@@ -45,7 +45,71 @@ void syscall2(){
 struct SysCall {
 	char xjmp;
 	void()* syscall;
-	char xnop;	
+	char xnop;
+	char SYSCALL00;
+	char SYSCALL01;
+	char SYSCALL02;
+	char SYSCALL03;
+	char SYSCALL04;
+	char SYSCALL05;
+	char SYSCALL06;
+	char SYSCALL07;
+	char SYSCALL08;
+	char SYSCALL09;
+	char SYSCALL0A;
+	char SYSCALL0B;
+	char SYSCALL0C;
+	char SYSCALL0D;
+	char SYSCALL0E;
+	char SYSCALL0F;
+	char SYSCALL10;
+	char SECURENTR;
+	char SECUREXIT;
+	char SYSCALL13;
+	char SYSCALL14;
+	char SYSCALL15;
+	char SYSCALL16;
+	char SYSCALL17;
+	char SYSCALL18;
+	char SYSCALL19;
+	char SYSCALL1A;
+	char SYSCALL1B;
+	char SYSCALL1C;
+	char SYSCALL1D;
+	char SYSCALL1E;
+	char SYSCALL1F;
+	char SYSCALL20;
+	char SYSCALL21;
+	char SYSCALL22;
+	char SYSCALL23;
+	char SYSCALL24;
+	char SYSCALL25;
+	char SYSCALL26;
+	char SYSCALL27;
+	char SYSCALL28;
+	char SYSCALL29;
+	char SYSCALL2A;
+	char SYSCALL2B;
+	char SYSCALL2C;
+	char SYSCALL2D;
+	char SYSCALL2E;
+	char SYSCALL2F;
+	char SYSCALL30;
+	char SYSCALL31;
+	char SYSCALL32;
+	char SYSCALL33;
+	char SYSCALL34;
+	char SYSCALL35;
+	char SYSCALL36;
+	char SYSCALL37;
+	char SYSCALL38;
+	char SYSCALL39;
+	char SYSCALL3A;
+	char SYSCALL3B;
+	char SYSCALL3C;
+	char SYSCALL3D;
+	char SYSCALL3E;
+	char SYSCALL3F;
 };
 
 
@@ -59,4 +123,5 @@ export struct SysCall[] SYSCALLS = {
 
 export align(0x100) struct SysCall[] SYSCALL_RESET = {
 	{ JMP,&main, NOP }
+	
 };
