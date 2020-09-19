@@ -40,6 +40,211 @@ void syscall2(){
 	*(SCREEN+78) = '<';
 }
 
+void syscall3(){
+	
+}
+
+void syscall4(){
+	
+}
+void syscall5(){
+	
+}
+
+void syscall6(){
+	
+}
+
+void syscall7(){
+	
+}
+void syscall8(){
+	
+}
+void syscall9(){
+	
+}
+void syscalla(){
+	
+}
+void syscallb(){
+	
+}
+void syscallc(){
+	
+}
+void syscalld(){
+	
+}
+
+void syscalle(){
+	
+}
+void syscallf(){
+	
+}
+void syscall10(){
+	
+}
+void securentr(){
+	
+}
+void securexit(){
+	
+}
+void syscall13(){
+	
+}
+void syscall14(){
+	
+}
+void syscall15(){
+	
+}
+void syscall16(){
+	
+}
+void syscall17(){
+	
+}
+void syscall18(){
+	
+}
+void syscall19(){
+	
+}
+void syscall1a(){
+	
+}
+void syscall1b(){
+	
+}
+void syscall1c(){
+	
+}
+void syscall1d(){
+	
+}
+void syscall1e(){
+	
+}
+void syscall1f(){
+	
+}
+void syscall20(){
+	
+}
+void syscall21(){
+	
+}
+void syscall22(){
+	
+}
+void syscall23(){
+	
+}
+void syscall24(){
+	
+}
+void syscall25(){
+	
+}
+void syscall26(){
+	
+}
+void syscall27(){
+	
+}
+void syscall28(){
+	
+}
+void syscall29(){
+	
+}
+void syscall2a(){
+	
+}
+void syscall2b(){
+	
+}
+void syscall2c(){
+	
+}
+void syscall2d(){
+	
+}
+void syscall2e(){
+	
+}
+void syscall2f(){
+	
+}
+void syscall30(){
+	
+}
+void syscall31(){
+	
+}
+void syscall32(){
+	
+}
+void syscall33(){
+	
+}
+void syscall34(){
+	
+}
+void syscall35(){
+	
+}
+void syscall36(){
+	
+}
+void syscall37(){
+	
+}
+void syscall38(){
+	
+}
+void syscall39(){
+	
+}
+void syscall3a(){
+	
+}
+void syscall3b(){
+	
+}
+void syscall3c(){
+	
+}
+void syscall3d(){
+	
+}
+void syscall3e(){
+	
+}
+void syscall3f(){
+	
+}
+void reset(){
+}
+
+void pagefault(){
+}
+void restorkey(){
+}
+void alttabkey(){
+}
+void vf011rd(){
+}
+void vf011wr(){
+}
+void reserved(){
+}
+void cpukil(){
+}
+
 #pragma data_seg(Syscall)
 
 struct SysCall {
@@ -55,74 +260,82 @@ const char NOP = 0xea;
 
 export struct SysCall[] SYSCALLS = {
 	{JMP, &syscall1, NOP},
-	{JMP, &syscall2, NOP}
-	char SYSCALL00;
-	char SYSCALL01;
-	char SYSCALL02;
-	char SYSCALL03;
-	char SYSCALL04;
-	char SYSCALL05;
-	char SYSCALL06;
-	char SYSCALL07;
-	char SYSCALL08;
-	char SYSCALL09;
-	char SYSCALL0A;
-	char SYSCALL0B;
-	char SYSCALL0C;
-	char SYSCALL0D;
-	char SYSCALL0E;
-	char SYSCALL0F;
-	char SYSCALL10;
-	char SECURENTR;
-	char SECUREXIT;
-	char SYSCALL13;
-	char SYSCALL14;
-	char SYSCALL15;
-	char SYSCALL16;
-	char SYSCALL17;
-	char SYSCALL18;
-	char SYSCALL19;
-	char SYSCALL1A;
-	char SYSCALL1B;
-	char SYSCALL1C;
-	char SYSCALL1D;
-	char SYSCALL1E;
-	char SYSCALL1F;
-	char SYSCALL20;
-	char SYSCALL21;
-	char SYSCALL22;
-	char SYSCALL23;
-	char SYSCALL24;
-	char SYSCALL25;
-	char SYSCALL26;
-	char SYSCALL27;
-	char SYSCALL28;
-	char SYSCALL29;
-	char SYSCALL2A;
-	char SYSCALL2B;
-	char SYSCALL2C;
-	char SYSCALL2D;
-	char SYSCALL2E;
-	char SYSCALL2F;
-	char SYSCALL30;
-	char SYSCALL31;
-	char SYSCALL32;
-	char SYSCALL33;
-	char SYSCALL34;
-	char SYSCALL35;
-	char SYSCALL36;
-	char SYSCALL37;
-	char SYSCALL38;
-	char SYSCALL39;
-	char SYSCALL3A;
-	char SYSCALL3B;
-	char SYSCALL3C;
-	char SYSCALL3D;
-	char SYSCALL3E;
-	char SYSCALL3F;
+	{JMP, &syscall2, NOP},
+	{JMP,  &syscall3, NOP},
+	{JMP, &syscall4, NOP},
+	{JMP, &syscall5, NOP},
+	{JMP, &syscall6, NOP},
+	{JMP, &syscall7, NOP},
+	{JMP, &syscall8, NOP},
+	{JMP, &syscall9, NOP},
+	{JMP, &syscalla, NOP},
+	{JMP, &syscallb, NOP},
+	{JMP, &syscallc, NOP},
+	{JMP, &syscalld, NOP},
+	{JMP, &syscalle, NOP},
+	{JMP, &syscallf, NOP},
+	{JMP, &syscall10, NOP},
+	{JMP, &securentr, NOP},
+	{JMP, &securexit, NOP},
+	{JMP, &syscall13, NOP},
+	{JMP, &syscall14, NOP},
+	{JMP, &syscall15, NOP},
+	{JMP, &syscall16, NOP},
+	{JMP, &syscall17, NOP},
+	{JMP, &syscall18, NOP},
+	{JMP, &syscall19, NOP},
+	{JMP, &syscall1a, NOP},
+	{JMP, &syscall1b, NOP},
+	{JMP, &syscall1c, NOP},
+	{JMP, &syscall1d, NOP},
+	{JMP, &syscall1e, NOP},
+	{JMP, &syscall1f, NOP},
+	{JMP, &syscall20, NOP},
+	{JMP, &syscall21, NOP},
+	{JMP, &syscall22, NOP},
+	{JMP, &syscall23, NOP},
+	{JMP, &syscall24, NOP},
+	{JMP, &syscall25, NOP},
+	{JMP, &syscall26, NOP},
+	{JMP, &syscall27, NOP},
+	{JMP, &syscall28, NOP},
+	{JMP, &syscall29, NOP},
+	{JMP, &syscall2a, NOP},
+	{JMP, &syscall2b, NOP},
+	{JMP, &syscall2c, NOP},
+	{JMP, &syscall2d, NOP},
+	{JMP, &syscall2e, NOP},
+	{JMP, &syscall2f, NOP},
+	{JMP, &syscall30, NOP},
+	{JMP, &syscall31, NOP},
+	{JMP, &syscall32, NOP},
+	{JMP, &syscall33, NOP},
+	{JMP, &syscall34, NOP},
+	{JMP, &syscall35, NOP},
+	{JMP, &syscall36, NOP},
+	{JMP, &syscall37, NOP},
+	{JMP, &syscall38, NOP},
+	{JMP, &syscall39, NOP},
+	{JMP, &syscall3a, NOP},
+	{JMP, &syscall3b, NOP},
+	{JMP, &syscall3c, NOP},
+	{JMP, &syscall3d, NOP},
+	{JMP, &syscall3e, NOP},
+	{JMP, &syscall3f, NOP}
+	
 };
 
 export align(0x100) struct SysCall[] SYSCALL_RESET = {
-	{ JMP,&main, NOP }
+	{ JMP,&main, NOP },
+	{ JMP,&reset, NOP },
+	{ JMP,&pagefault, NOP },
+	{ JMP,&alttabkey, NOP },
+	{ JMP,&vf011rd, NOP },
+	{ JMP,&vf011wr, NOP },
+	{ JMP,&reserved, NOP },
+	{ JMP,&reserved, NOP },
+	{ JMP,&reserved, NOP },
+	{ JMP,&cpukil, NOP }
 	
+
 };
