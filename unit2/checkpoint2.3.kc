@@ -1,0 +1,364 @@
+import "string"
+
+#pragma link("mega65hyper.ld")
+const char* RASTER = 0xd012;
+const char* VIC_MEMORY = 0xd018;
+const char* SCREEN = 0x0400;
+const char* BGCOL = 0xd021;
+const char* COLS = 0xd800;
+const char BLACK = 0;
+const char WHITE = 1;
+// I add a piece of my FANinto the output
+char[] MESSAGE = "hello world!";
+
+void main(){
+	//wow main method
+	*VIC_MEMORY = 0x14;
+	memset(SCREEN, ' ', 40*25);
+	memset(COLS, WHITE, 40*25);
+	char* sc = SCREEN+40;
+	char* msg = MESSAGE;
+	// using a while loop?
+	while(*msg) {
+		*sc++ = *msg++;
+	}
+	while(true) {
+		if(*RASTER==54|| *RASTER==66) {
+			*BGCOL = WHITE;
+		} else {
+			*BGCOL = BLACK;
+		}
+	}
+	
+}
+void exit_hypervisor(){
+	*(unsigned char *)$D67F = $01;
+}
+
+void syscall1(){
+	*(SCREEN+79) = '>';
+}
+
+void syscall2(){
+	*(SCREEN+78) = '<';
+}
+void syscall00(){
+	
+}
+
+void syscall03(){
+	
+}
+
+void syscall04(){
+	
+}
+void syscall05(){
+	
+}
+
+void syscall06(){
+	
+}
+
+void syscall07(){
+	
+}
+void syscall08(){
+	
+}
+void syscall09(){
+	
+}
+void syscall0a(){
+	
+}
+void syscall0b(){
+	
+}
+void syscall0c(){
+	
+}
+void syscall0d(){
+	
+}
+
+void syscall0e(){
+	
+}
+void syscall0f(){
+	
+}
+void syscall10(){
+	
+}
+void securentr(){
+	
+}
+void securexit(){
+	
+}
+void syscall13(){
+	
+}
+void syscall14(){
+	
+}
+void syscall15(){
+	
+}
+void syscall16(){
+	
+}
+void syscall17(){
+	
+}
+void syscall18(){
+	
+}
+void syscall19(){
+	
+}
+void syscall1a(){
+	
+}
+void syscall1b(){
+	
+}
+void syscall1c(){
+	
+}
+void syscall1d(){
+	
+}
+void syscall1e(){
+	
+}
+void syscall1f(){
+	
+}
+void syscall20(){
+	
+}
+void syscall21(){
+	
+}
+void syscall22(){
+	
+}
+void syscall23(){
+	
+}
+void syscall24(){
+	
+}
+void syscall25(){
+	
+}
+void syscall26(){
+	
+}
+void syscall27(){
+	
+}
+void syscall28(){
+	
+}
+void syscall29(){
+	
+}
+void syscall2a(){
+	
+}
+void syscall2b(){
+	
+}
+void syscall2c(){
+	
+}
+void syscall2d(){
+	
+}
+void syscall2e(){
+	
+}
+void syscall2f(){
+	
+}
+void syscall30(){
+	
+}
+void syscall31(){
+	
+}
+void syscall32(){
+	
+}
+void syscall33(){
+	
+}
+void syscall34(){
+	
+}
+void syscall35(){
+	
+}
+void syscall36(){
+	
+}
+void syscall37(){
+	
+}
+void syscall38(){
+	
+}
+void syscall39(){
+	
+}
+void syscall3a(){
+	
+}
+void syscall3b(){
+	
+}
+void syscall3c(){
+	
+}
+void syscall3d(){
+	
+}
+void syscall3e(){
+	
+}
+void syscall3f(){
+	
+}
+void reset(){
+	*VIC_MEMORY = 0x14;
+	memset(SCREEN, ' ', 40*25);
+	memset(COLS, WHITE, 40*25);
+	char* sc = SCREEN+40;
+	char* msg = MESSAGE;
+	// using a while loop?
+	while(*msg) {
+		*sc++ = *msg++;
+	}
+	while(true) {
+		if(*RASTER==54|| *RASTER==66) {
+			*BGCOL = WHITE;
+		} else {
+			*BGCOL = BLACK;
+		}
+	}
+}
+
+void pagefault(){
+}
+void restorkey(){
+}
+void alttabkey(){
+}
+void vf011rd(){
+}
+void vf011wr(){
+}
+void reserved(){
+}
+void cpukil(){
+}
+
+#pragma data_seg(Syscall)
+
+struct SysCall {
+	char xjmp;
+	void()* syscall;
+	char xnop;
+	
+};
+
+
+const char JMP = 0x4c;
+const char NOP = 0xea;
+
+export struct SysCall[] SYSCALLS = {
+	{JMP, &syscall00, NOP},
+	{JMP, &syscall01, NOP},
+	{JMP, &syscall02, NOP},
+	{JMP,  &syscall03, NOP},
+	{JMP, &syscall04, NOP},
+	{JMP, &syscall05, NOP},
+	{JMP, &syscall06, NOP},
+	{JMP, &syscall07, NOP},
+	{JMP, &syscall08, NOP},
+	{JMP, &syscall09, NOP},
+	{JMP, &syscall0a, NOP},
+	{JMP, &syscall0b, NOP},
+	{JMP, &syscall0c, NOP},
+	{JMP, &syscall0d, NOP},
+	{JMP, &syscall0e, NOP},
+	{JMP, &syscall0f, NOP},
+	{JMP, &syscall10, NOP},
+	{JMP, &securentr, NOP},
+	{JMP, &securexit, NOP},
+	{JMP, &syscall13, NOP},
+	{JMP, &syscall14, NOP},
+	{JMP, &syscall15, NOP},
+	{JMP, &syscall16, NOP},
+	{JMP, &syscall17, NOP},
+	{JMP, &syscall18, NOP},
+	{JMP, &syscall19, NOP},
+	{JMP, &syscall1a, NOP},
+	{JMP, &syscall1b, NOP},
+	{JMP, &syscall1c, NOP},
+	{JMP, &syscall1d, NOP},
+	{JMP, &syscall1e, NOP},
+	{JMP, &syscall1f, NOP},
+	{JMP, &syscall20, NOP},
+	{JMP, &syscall21, NOP},
+	{JMP, &syscall22, NOP},
+	{JMP, &syscall23, NOP},
+	{JMP, &syscall24, NOP},
+	{JMP, &syscall25, NOP},
+	{JMP, &syscall26, NOP},
+	{JMP, &syscall27, NOP},
+	{JMP, &syscall28, NOP},
+	{JMP, &syscall29, NOP},
+	{JMP, &syscall2a, NOP},
+	{JMP, &syscall2b, NOP},
+	{JMP, &syscall2c, NOP},
+	{JMP, &syscall2d, NOP},
+	{JMP, &syscall2e, NOP},
+	{JMP, &syscall2f, NOP},
+	{JMP, &syscall30, NOP},
+	{JMP, &syscall31, NOP},
+	{JMP, &syscall32, NOP},
+	{JMP, &syscall33, NOP},
+	{JMP, &syscall34, NOP},
+	{JMP, &syscall35, NOP},
+	{JMP, &syscall36, NOP},
+	{JMP, &syscall37, NOP},
+	{JMP, &syscall38, NOP},
+	{JMP, &syscall39, NOP},
+	{JMP, &syscall3a, NOP},
+	{JMP, &syscall3b, NOP},
+	{JMP, &syscall3c, NOP},
+	{JMP, &syscall3d, NOP},
+	{JMP, &syscall3e, NOP},
+	{JMP, &syscall3f, NOP}
+	
+};
+
+export align(0x100) struct SysCall[] TRAPS = {
+	{ JMP,&main, NOP },
+	{ JMP,&reset, NOP },
+	{ JMP,&pagefault, NOP },
+	{ JMP,&alttabkey, NOP },
+	{ JMP,&vf011rd, NOP },
+	{ JMP,&vf011wr, NOP },
+	{ JMP,&reserved, NOP },
+	{ JMP,&reserved, NOP },
+	{ JMP,&reserved, NOP },
+	{ JMP,&cpukil, NOP }
+	
+
+};
