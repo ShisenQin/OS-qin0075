@@ -43,54 +43,54 @@ void syscall2(){
 	*(SCREEN+78) = '<';
 }
 void syscall00(){
-	
+	exit_hypervisor();
 }
 
 void syscall03(){
-	
+	exit_hypervisor();
 }
 
 void syscall04(){
-	
+	exit_hypervisor();
 }
 void syscall05(){
-	
+	exit_hypervisor();
 }
 
 void syscall06(){
-	
+	exit_hypervisor();
 }
 
 void syscall07(){
-	
+	exit_hypervisor();
 }
 void syscall08(){
-	
+	exit_hypervisor();
 }
 void syscall09(){
 	
 }
 void syscall0a(){
-	
+	exit_hypervisor();
 }
 void syscall0b(){
-	
+	exit_hypervisor();
 }
 void syscall0c(){
-	
+	exit_hypervisor();
 }
 void syscall0d(){
-	
+	exit_hypervisor();
 }
 
 void syscall0e(){
-	
+	exit_hypervisor();
 }
 void syscall0f(){
-	
+	exit_hypervisor();
 }
 void syscall10(){
-	
+	exit_hypervisor();
 }
 void securentr(){
 	
@@ -99,139 +99,139 @@ void securexit(){
 	
 }
 void syscall13(){
-	
+	exit_hypervisor();
 }
 void syscall14(){
-	
+	exit_hypervisor();
 }
 void syscall15(){
-	
+	exit_hypervisor();
 }
 void syscall16(){
-	
+	exit_hypervisor();
 }
 void syscall17(){
-	
+	exit_hypervisor();
 }
 void syscall18(){
-	
+	exit_hypervisor();
 }
 void syscall19(){
-	
+	exit_hypervisor();
 }
 void syscall1a(){
-	
+	exit_hypervisor();
 }
 void syscall1b(){
-	
+	exit_hypervisor();
 }
 void syscall1c(){
-	
+	exit_hypervisor();
 }
 void syscall1d(){
-	
+	exit_hypervisor();
 }
 void syscall1e(){
 	
 }
 void syscall1f(){
-	
+	exit_hypervisor();
 }
 void syscall20(){
-	
+	exit_hypervisor();
 }
 void syscall21(){
-	
+	exit_hypervisor();
 }
 void syscall22(){
-	
+	exit_hypervisor();
 }
 void syscall23(){
-	
+	exit_hypervisor();
 }
 void syscall24(){
-	
+	exit_hypervisor();
 }
 void syscall25(){
-	
+	exit_hypervisor();
 }
 void syscall26(){
-	
+	exit_hypervisor();
 }
 void syscall27(){
-	
+	exit_hypervisor();
 }
 void syscall28(){
-	
+	exit_hypervisor();
 }
 void syscall29(){
-	
+	exit_hypervisor();
 }
 void syscall2a(){
-	
+	exit_hypervisor();
 }
 void syscall2b(){
-	
+	exit_hypervisor();
 }
 void syscall2c(){
-	
+	exit_hypervisor();
 }
 void syscall2d(){
-	
+	exit_hypervisor();
 }
 void syscall2e(){
-	
+	exit_hypervisor();
 }
 void syscall2f(){
-	
+	exit_hypervisor();
 }
 void syscall30(){
-	
+	exit_hypervisor();
 }
 void syscall31(){
-	
+	exit_hypervisor();
 }
 void syscall32(){
-	
+	exit_hypervisor();
 }
 void syscall33(){
-	
+	exit_hypervisor();
 }
 void syscall34(){
-	
+	exit_hypervisor();
 }
 void syscall35(){
-	
+	exit_hypervisor();
 }
 void syscall36(){
-	
+	exit_hypervisor();
 }
 void syscall37(){
-	
+	exit_hypervisor();
 }
 void syscall38(){
-	
+	exit_hypervisor();
 }
 void syscall39(){
-	
+	exit_hypervisor();
 }
 void syscall3a(){
-	
+	exit_hypervisor();
 }
 void syscall3b(){
-	
+	exit_hypervisor();
 }
 void syscall3c(){
-	
+	exit_hypervisor();
 }
 void syscall3d(){
-	
+	exit_hypervisor();
 }
 void syscall3e(){
-	
+	exit_hypervisor();
 }
 void syscall3f(){
-	
+	exit_hypervisor();
 }
 void reset(){
 	*VIC_MEMORY = 0x14;
