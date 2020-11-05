@@ -1,0 +1,1056 @@
+// XMega65 Kernal Development Template
+// Each function of the kernal is a no-args function
+// The functions are placed in the SYSCALLS table surrounded by JMP and NOP
+
+#pragma cpu(rom6502)
+
+import "string"
+
+#pragma link("mega65hyper.ld")
+
+    const char * RASTER = 0xd012;
+const char *VIC_MEMORY = 0xd018;
+const char *SCREEN = 0x0400;
+const char *BGCOL = 0xd021;
+const char *COLS = 0xd800;
+const char BLACK = 0;
+const char BLUE = 6;
+const char WHITE = 1;
+
+char[] MESSAGE = "checkpoint 6.1 QIN0075";
+
+const unsigned char STATE_NEW = $01;
+const unsigned char STATE_READY = $02;
+const unsigned char STATE_READYSUSPENDED = $03;
+const unsigned char STATE_BLOCKEDSUSPENDED = $04;
+const unsigned char STATE_BLOCKED = $05;
+const unsigned char STATE_RUNNING = $06;
+const unsigned char STATE_EXIT = $07;
+
+// Message structure: 16 bytes in total
+struct ipc_message
+{
+    unsigned char from;
+    unsigned char to;
+    unsigned char priority;
+    unsigned char sequence;
+    unsigned char[12] message;
+};
+
+// Process Descriptor Block definition
+struct process_descriptor_block
+{
+    // Copy from your os5.2.kc file
+    // Unique identifier for the process
+    unsigned char process_id;
+
+    // Current state of the process
+    unsigned char process_state;
+
+    // Human readable name of the process
+    char *process_name;
+
+    // Where this process is stored when not running
+    // i.e., where in the $20000-$5FFFF memory range the
+    // process is stored when not running.
+    unsigned long storage_start_address;
+    unsigned long storage_end_address;
+
+    // Stored registers and related machine state for this
+    // process (for the $D640-$D67E machine state registers)
+    unsigned char *stored_state;
+};
+
+// Process stored state will live at $C000-$C7FF, with 256 bytes
+// for each process reserved
+const unsigned char *stored_pdbs = $C000;
+// 8 processes x 16 bytes = 128 bytes for names
+const char *process_names = $C800;
+// 8 processes x 64 bytes context state = 512 bytes
+const unsigned char *process_context_states = $C900;
+
+// Which is the current running process?
+volatile unsigned char running_pdb = $ff;
+
+// Counter for helping determine the next available proccess ID.
+volatile unsigned char pid_counter = 0;
+
+unsigned char next_free_pid()
+{
+    unsigned short i;
+
+    // Start with the next process ID
+    unsigned char pid = ++pid_counter;
+
+    // then make sure that it isn't currently in use by another process
+    // This loop must terminate according to the Pigeon Hole Principlle,
+    // i.e., there are more possible PIDs than there are processes, so
+    // iterating through them will find at least one.
+    unsigned char stepped = 1;
+    while (stepped)
+    {
+        stepped = 0;
+        for (i = 0; i < 8; i++)
+        {
+            struct process_descriptor_block *p = (struct process_descriptor_block *)((unsigned short)stored_pdbs + (i << 8));
+            if (pid == p->process_id)
+            {
+                pid++;
+                stepped = 1;
+            }
+        }
+    }
+
+    return pid;
+}
+
+void describe_pdb(unsigned char pdb_number)
+{
+    unsigned char i;
+    struct process_descriptor_block *p = (struct process_descriptor_block *)(((unsigned short)stored_pdbs) + (((unsigned short)pdb_number) << 8));
+
+    print_to_screen("pdb#");
+    print_hex((word)pdb_number);
+    print_to_screen(":");
+    print_newline();
+
+    print_to_screen("  pid:          ");
+    print_hex((word)p->process_id);
+    print_newline();
+
+    print_to_screen("  state:        ");
+    switch (p->process_state)
+    {
+    case STATE_NEW:
+        print_to_screen("new");
+        break;
+    case STATE_RUNNING:
+        print_to_screen("running");
+        break;
+    case STATE_BLOCKED:
+        print_to_screen("blocked");
+        break;
+    case STATE_READY:
+        print_to_screen("ready");
+        break;
+    case STATE_BLOCKEDSUSPENDED:
+        print_to_screen("blockedsuspended");
+        break;
+    case STATE_READYSUSPENDED:
+        print_to_screen("readysuspended");
+        break;
+    case STATE_EXIT:
+        print_to_screen("exit");
+        break;
+    default:
+        // Unknown state
+        print_hex((word)p->process_state);
+    }
+    print_newline();
+
+    print_to_screen("  process name: ");
+    char *n = p->process_name;
+    for (i = 0; n[i]; i++)
+    {
+        print_char(n[i]);
+    }
+    print_newline();
+
+    print_to_screen("  mem start:    $");
+    print_dhex(p->storage_start_address);
+    print_newline();
+
+    print_to_screen("  mem end:      $");
+    print_dhex(p->storage_end_address);
+    print_newline();
+
+    print_to_screen("  pc:           $");
+    unsigned short *ss = p->stored_state;
+    print_hex(ss[4]);
+    print_newline();
+}
+
+// Setup a new process descriptor block
+void initialise_pdb(unsigned char pdb_number, char *name)
+{
+    // Copy from your os5.2.kc
+    unsigned char i;
+
+    struct process_descriptor_block *p = (struct process_descriptor_block *)(((unsigned short)stored_pdbs) + (((unsigned short)pdb_number) << 8));
+
+    // Setup process ID
+    p->process_id = next_free_pid();
+
+    // Setup process name
+    // (32 bytes space for each to fit 16 chars + nul)
+    // (we could just use 17 bytes, but kickc can't multiply by 17)
+    p->process_name = process_names + (((short)i) << 5);
+    char *namec = p->process_name;
+    char *names = name;
+    while (*names)
+    {
+        *namec++ = *names++;
+    }
+
+    // Set process state as not running.
+    p->process_state = STATE_NEW;
+
+    // Set stored memory area
+    // (for now, we just use fixed 8KB steps from $30000-$3FFFF
+    // corresponding to the PDB number
+    p->storage_start_address = $30000 + (((unsigned dword)pdb_number) * $2000);
+
+    p->storage_end_address = $31FFF + (((unsigned dword)pdb_number) * $2000);
+
+    // Initialise processor state for standard entry at $080D
+    // Everything to zero, except for a few things we will set manually
+
+    // 64 bytes context switching state for each process
+    p->stored_state = process_context_states + (((unsigned short)pdb_number) << 6);
+    unsigned char *ss = p->stored_state;
+
+    for (i = 0; i < 63; i++)
+        ss[i] = $00;
+
+    // Set standard CPU flags (8-bit stack, interrupts disabled)
+    ss[7] = $24;
+
+    *(unsigned short *)&ss[5] = $01FF;
+
+    *(unsigned short *)&ss[8] = $080D;
+
+    return;
+}
+
+void resume_pdb(unsigned char pdb_number)
+{
+    struct process_descriptor_block *p = (struct process_descriptor_block *)(((unsigned short)stored_pdbs) + (((unsigned short)pdb_number) << 8));
+
+    // Copy stored memory into place
+    // Copy from $0000-$03FF and $0800-$1FFF, so that we don't overwrite the screen
+    // Copy $0400 bytes from p->storage_start_address to location $0000
+    dma_copy(((unsigned dword)p->storage_start_address), $0000, $0400);
+    // Copy $1800 bytes from p->storage_start_address+$0800 to location $0800
+    dma_copy(((unsigned dword)p->storage_start_address) + $0800, $0800, $1800);
+    
+    // Load stored CPU state into Hypervisor saved register area at $FFD3640
+    unsigned char *ss = p->stored_state;
+    // Use a for() loop to copy 63 bytes from ss[0]--ss[62] to ((unsigned char *)$D640)[0]
+    //      -- ((unsigned char *)$D640)[62] (dma_copy doesn't work for this for some slightly complex reasons.)
+    for (unsigned short i = 0; i < 63; i++)
+    {
+        ((unsigned char *)$D640)[i] = ss[i];
+    }
+
+    // Set state of process to running
+    // Set p->process_state to STATE_RUNNING
+    p->process_state = STATE_RUNNING;
+    // Mark this PDB as the running process
+    // Set running_pdb to the PDB number we are resuming
+    running_pdb = pdb_number;
+    // Exit hypervisor and cause CPU register values (including PC) to be restored from
+    // those loaded from p->stored_state
+    exit_hypervisor();
+}
+
+struct dma_list
+{
+    unsigned char request_format0a;
+    unsigned char source_mb_option80;
+    unsigned char source_mb;
+    unsigned char dest_mb_option81;
+    unsigned char dest_mb;
+    unsigned char end_of_options00;
+
+    unsigned char cmd; // $00 = copy + end of list
+    unsigned short size;
+    unsigned short source_addr;
+    unsigned char source_bank;
+    unsigned short dest_addr;
+    unsigned char dest_bank;
+    unsigned char modulo00;
+};
+
+void dma_copy(unsigned long src, unsigned long dest, unsigned short length)
+{
+    struct dma_list list;
+    list.request_format0a = $0a;
+    list.source_mb_option80 = $80;
+    list.dest_mb_option81 = $81;
+    list.end_of_options00 = $00;
+    list.cmd = $00;
+    list.modulo00 = $00;
+
+    list.size = length;
+    list.dest_mb = (unsigned char)(dest >> 20);
+    list.dest_bank = (dest >> 16) & 0x7f;
+    list.dest_addr = (unsigned word)dest;
+
+    // Work around missing fragments in KickC
+    list.source_mb = (unsigned char)(src >> 20);
+    list.source_bank = (src >> 16) & 0x7f;
+
+    list.source_addr = (unsigned word)src;
+
+    // DMA list lives in hypervisor memory, so use correct list address when triggering
+    // (Variables in KickC usually end up in ZP, so we have to provide the base page correction
+    if (!(> &list))
+        *(unsigned char *)$D701 = $BF + (> &list);
+    else
+        *(unsigned char *)$D701 = (> &list);
+    *(unsigned char *)$D702 = $7F;
+    *(unsigned char *)$D704 = $FF;
+    *(unsigned char *)$D705 = < &list;
+}
+
+volatile unsigned char lpeek_value = $12;
+unsigned char lpeek(unsigned long address)
+{
+    // Work around all sorts of fun problems in KickC
+    unsigned dword t = (unsigned dword) & lpeek_value;
+    if (> ((unsigned short)&lpeek_value))
+        t += $FFF0000;
+    else
+        t += $FFFBF00;
+
+    unsigned char *c = $BF00 + (unsigned char *)&t;
+
+    dma_copy(address, t, 1);
+
+    return lpeek_value;
+}
+
+volatile unsigned char *current_screen_line = SCREEN;
+volatile unsigned char current_screen_x = 0;
+
+void print_char(char c)
+{
+    current_screen_line[current_screen_x++] = c;
+}
+
+void print_to_screen(char *message)
+{
+    char *c = message;
+    while (*c)
+    {
+        current_screen_line[current_screen_x++] = *c;
+        c++;
+    }
+}
+
+void print_newline()
+{
+    current_screen_line += 40;
+    current_screen_x = 0;
+}
+
+void print_hex(unsigned word value)
+{
+    char[5] hex;
+    unsigned char i;
+    for (i = 0; i < 8; i++)
+    {
+        if (value < 0xa000)
+            hex[i] = '0' + (char)(value >> 12);
+        else
+            hex[i] = (char)(value >> 12) - 9;
+        value <<= 4;
+    }
+    hex[4] = 0;
+    print_to_screen(hex);
+}
+
+void print_dhex(unsigned dword value)
+{
+    print_hex((word)(value >> 16));
+    print_hex((unsigned word)value);
+}
+
+unsigned char load_program(unsigned char pdb_number)
+{
+    // Search through packed programs for the one we need
+    unsigned long address = $20000;
+    unsigned char i;
+    unsigned char match = 0;
+
+    struct process_descriptor_block *pdb = (struct process_descriptor_block *)((unsigned short)stored_pdbs + (((unsigned short)pdb_number) << 8));
+
+    while (lpeek(address))
+    {
+
+        // Check for name match
+        for (i = 0; i < 16; i++)
+        {
+            unsigned char c1 = lpeek(address + i);
+            unsigned char *n = pdb->process_name;
+            unsigned char c2 = n[i];
+
+            if ((c1 == 0) && (c2 == 0))
+            {
+                match = 1;
+                break;
+            }
+            if (c1 != c2)
+                break;
+        }
+
+        if (match)
+        {
+            // Found program -- now copy it into place
+            unsigned short length;
+            unsigned char *hb = ((unsigned char *)&length) + 1;
+            length = lpeek(address + 16);
+            *hb = lpeek(address + 17);
+
+            // Copy program into place.
+            // As the program is formatted as a C64 program with a $0801 header, we copy it to offset $07FF.
+            unsigned dword dest = pdb->storage_start_address;
+            dest += $07FF;
+
+            dma_copy(address + 32, dest, length);
+
+            // Mark process as now runnable
+            pdb->process_state = STATE_READY;
+
+            return 0;
+        }
+
+        unsigned long new_address = (dword)lpeek(address + 18);
+        new_address |= ((dword)(lpeek(address + 19))) << 8;
+        new_address |= ((dword)(lpeek(address + 20))) << 16;
+
+        address = new_address;
+    }
+
+    // Failed to find program
+    return 1;
+}
+
+void main()
+{
+}
+
+void exit_hypervisor()
+{
+    // Exit hypervisor
+    *(char *)$D67F = $01;
+}
+
+// Copy your syscall handler functions from os5.2.kc
+// Don't forget to add describe_pdb(running_pdb); to your handler for SYSCALL $03
+void syscall1()
+{
+    *(SCREEN + 79) = ')';
+    exit_hypervisor();
+}
+
+void syscall2()
+{
+    *(SCREEN + 78) = '(';
+    exit_hypervisor();
+}
+
+void syscall3()
+{
+
+    exit_hypervisor();
+}
+
+void syscall4()
+{
+    describe_pdb(running_pdb);
+    exit_hypervisor();
+}
+
+void syscall5()
+{
+    exit_hypervisor();
+}
+
+void syscall6()
+{
+    exit_hypervisor();
+}
+
+void syscall7()
+{
+    exit_hypervisor();
+}
+
+void syscall8()
+{
+    exit_hypervisor();
+}
+
+void syscall9()
+{
+    exit_hypervisor();
+}
+
+void syscall10()
+{
+    struct process_descriptor_block *pdb = (struct process_descriptor_block *)((unsigned short)stored_pdbs + (((unsigned short)running_pdb) << 8));
+    unsigned char caller_pid = pdb->process_id;
+
+    unsigned char message_id = get_next_message_id(caller_pid);
+
+    if (message_id != 0xff)
+    {
+        // We have a message to return
+        struct ipc_message *m = get_pointer_to_message(message_id);
+        // Copy it to the transfer area
+        dma_copy((unsigned short)m, $0300, 16);
+        // De-queue the message
+        dequeue_message(message_id);
+        // Return from operating system back into the calling program.
+        exit_hypervisor();
+    }
+    else
+    {
+        //we have no message to return, so set messages all to $ffs
+        for (unsigned char i = 0; i < 16; i++)
+            *(unsigned char *)($0300 + i) = 0xff;
+        exit_hypervisor();
+    }
+}
+
+void syscall11()
+{
+    exit_hypervisor();
+}
+
+void syscall12()
+{
+    exit_hypervisor();
+}
+
+void syscall13()
+{
+    exit_hypervisor();
+}
+
+void syscall14()
+{
+    exit_hypervisor();
+}
+
+void syscall15()
+{
+    exit_hypervisor();
+}
+
+void syscall16()
+{
+    exit_hypervisor();
+}
+
+void SECURENTR()
+{
+    exit_hypervisor();
+}
+
+void SECUREXIT()
+{
+    exit_hypervisor();
+}
+
+void syscall19()
+{
+
+    exit_hypervisor();
+}
+
+void syscall20()
+{
+    exit_hypervisor();
+}
+
+void syscall21()
+{
+    exit_hypervisor();
+}
+
+void syscall22()
+{
+    exit_hypervisor();
+}
+
+void syscall23()
+{
+    exit_hypervisor();
+}
+
+void syscall24()
+{
+    exit_hypervisor();
+}
+
+void syscall25()
+{
+    exit_hypervisor();
+}
+
+void syscall26()
+{
+    exit_hypervisor();
+}
+
+void syscall27()
+{
+    exit_hypervisor();
+}
+
+void syscall28()
+{
+    exit_hypervisor();
+}
+
+void syscall29()
+{
+    exit_hypervisor();
+}
+
+void syscall30()
+{
+    exit_hypervisor();
+}
+
+void syscall31()
+{
+    exit_hypervisor();
+}
+
+void syscall32()
+{
+    exit_hypervisor();
+}
+
+void syscall33()
+{
+    exit_hypervisor();
+}
+
+void syscall34()
+{
+    exit_hypervisor();
+}
+
+void syscall35()
+{
+    exit_hypervisor();
+}
+
+void syscall36()
+{
+    exit_hypervisor();
+}
+
+void syscall37()
+{
+    exit_hypervisor();
+}
+
+void syscall38()
+{
+    exit_hypervisor();
+}
+
+void syscall39()
+{
+    exit_hypervisor();
+}
+
+void syscall40()
+{
+    exit_hypervisor();
+}
+
+void syscall41()
+{
+    exit_hypervisor();
+}
+
+void syscall42()
+{
+    exit_hypervisor();
+}
+
+void syscall43()
+{
+    exit_hypervisor();
+}
+
+void syscall44()
+{
+    exit_hypervisor();
+}
+
+void syscall45()
+{
+    exit_hypervisor();
+}
+
+void syscall46()
+{
+    exit_hypervisor();
+}
+
+void syscall47()
+{
+    exit_hypervisor();
+}
+
+void syscall48()
+{
+    exit_hypervisor();
+}
+
+void syscall49()
+{
+    exit_hypervisor();
+}
+
+void syscall50()
+{
+    exit_hypervisor();
+}
+
+void syscall51()
+{
+    exit_hypervisor();
+}
+
+void syscall52()
+{
+    exit_hypervisor();
+}
+
+void syscall53()
+{
+    exit_hypervisor();
+}
+
+void syscall54()
+{
+    exit_hypervisor();
+}
+
+void syscall55()
+{
+    exit_hypervisor();
+}
+
+void syscall56()
+{
+    exit_hypervisor();
+}
+
+void syscall57()
+{
+    exit_hypervisor();
+}
+
+void syscall58()
+{
+    exit_hypervisor();
+}
+
+void syscall59()
+{
+    exit_hypervisor();
+}
+
+void syscall60()
+{
+    exit_hypervisor();
+}
+
+void syscall61()
+{
+    exit_hypervisor();
+}
+
+void syscall62()
+{
+    exit_hypervisor();
+}
+
+void syscall63()
+{
+    exit_hypervisor();
+}
+
+void syscall64()
+{
+    exit_hypervisor();
+}
+// Copy your RESET() routine from os5.2.kc
+// Don't forget to call resume_pdb(0) immediately after load_program(0)
+void RESET()
+{
+
+    *VIC_MEMORY = 0x14;
+    memset(SCREEN, ' ', 40 * 25);
+    memset(COLS, WHITE, 40 * 25);
+    char *sc = SCREEN + 40;
+    char *msg = MESSAGE;
+    while (*msg)
+    {
+        *sc++ = *msg++;
+    }
+
+    current_screen_line = SCREEN;
+    print_newline();
+    print_newline();
+    print_newline();
+
+    // Start with empty message queue
+    ipc_message_count = 0;
+    // Create message from PID 0 (OS) to PID 1
+    queue_message(0, 1, 1, 1, "cpoint 6.1  ");
+    // Initialise PDB slot 0 to hold program1
+    initialise_pdb(0, "program1.prg");
+    // Load the program
+    load_program(0);
+    // Run the program
+    resume_pdb(0);
+
+    while (true)
+    {
+        if (*RASTER == 54 || *RASTER == 66)
+        {
+            *BGCOL = WHITE;
+        }
+        else
+        {
+            *BGCOL = BLACK;
+        }
+    }
+}
+
+// Copy your trap handler functions and entry point tables from os5.2.kc
+void PAGFAULT()
+{
+    exit_hypervisor();
+}
+
+void RESTORKEY()
+{
+    exit_hypervisor();
+}
+
+void ALTTABKEY()
+{
+    exit_hypervisor();
+}
+
+void VF011RD()
+{
+    exit_hypervisor();
+}
+
+void VF011WR()
+{
+    exit_hypervisor();
+}
+
+void undefined_trap()
+{
+    exit_hypervisor();
+}
+
+void CPUKIL()
+{
+    exit_hypervisor();
+}
+
+// We will have 16 slots of 16 bytes at $CB00-$CBFF
+const unsigned char *ipc_messages = $CB00;
+volatile unsigned char ipc_message_count;
+void queue_message(unsigned char from, unsigned char to, unsigned char priority,
+                   unsigned char sequence, unsigned char *message)
+{
+    if (ipc_message_count > 15)
+        return;
+    struct ipc_message *m = (struct ipc_message *)(ipc_messages + ipc_message_count * 16);
+    m->from = from;
+    m->to = to;
+    m->priority = priority;
+    m->sequence = sequence;
+
+    for (unsigned char i = 0; i < 12; i++)
+        m->message[i] = message[i];
+
+    ipc_message_count = 1;
+}
+
+void dequeue_message(unsigned char message_num)
+{
+    if (message_num >= ipc_message_count)
+        return;
+
+    if (message_num == ipc_message_count - 1)
+    {
+        ipc_message_count--;
+        return;
+    }
+
+    unsigned char *dest = (unsigned char *)((unsigned short)ipc_messages + message_num * 16);
+    unsigned char *scr = (unsigned char *)((unsigned short)ipc_messages + (ipc_message_count - 1) * 16);
+
+    for (unsigned char i = 0; i < 16; i++)
+        dest[i] = scr[i];
+    ipc_message_count--;
+}
+
+unsigned char get_next_message_id(unsigned char receiver)
+{
+    unsigned char best_message = 0xff;
+
+    for (unsigned char i = 0; i < 16; i++)
+    {
+        struct ipc_message *m = (struct ipc_message *)(ipc_messages + i * 16);
+        if (m->to == receiver)
+        {
+            if (best_message == 0xff)
+            {
+                best_message = i;
+            }
+        }
+    }
+    return best_message;
+}
+
+struct ipc_message *get_pointer_to_message(unsigned char id)
+{
+    return (struct ipc_message *)(ipc_messages + id * 16);
+}
+
+#pragma data_seg(Syscall)
+
+struct SysCall
+{
+    char xjmp;
+    void() * syscall;
+    char xnop;
+};
+
+const char JMP = 0x4c;
+const char NOP = 0xea;
+
+export struct SysCall[] SYSCALLS = {
+    {JMP, &syscall1, NOP},
+    {JMP, &syscall2, NOP},
+    {JMP, &syscall3, NOP},
+    {JMP, &syscall4, NOP},
+    {JMP, &syscall5, NOP},
+    {JMP, &syscall6, NOP},
+    {JMP, &syscall7, NOP},
+    {JMP, &syscall8, NOP},
+    {JMP, &syscall9, NOP},
+    {JMP, &syscall10, NOP},
+    {JMP, &syscall11, NOP},
+    {JMP, &syscall12, NOP},
+    {JMP, &syscall13, NOP},
+    {JMP, &syscall14, NOP},
+    {JMP, &syscall15, NOP},
+    {JMP, &syscall16, NOP},
+    {JMP, &SECURENTR, NOP},
+    {JMP, &SECUREXIT, NOP},
+    {JMP, &syscall19, NOP},
+    {JMP, &syscall20, NOP},
+    {JMP, &syscall21, NOP},
+    {JMP, &syscall22, NOP},
+    {JMP, &syscall23, NOP},
+    {JMP, &syscall24, NOP},
+    {JMP, &syscall25, NOP},
+    {JMP, &syscall26, NOP},
+    {JMP, &syscall27, NOP},
+    {JMP, &syscall28, NOP},
+    {JMP, &syscall29, NOP},
+    {JMP, &syscall30, NOP},
+    {JMP, &syscall31, NOP},
+    {JMP, &syscall32, NOP},
+    {JMP, &syscall33, NOP},
+    {JMP, &syscall34, NOP},
+    {JMP, &syscall35, NOP},
+    {JMP, &syscall36, NOP},
+    {JMP, &syscall37, NOP},
+    {JMP, &syscall38, NOP},
+    {JMP, &syscall39, NOP},
+    {JMP, &syscall40, NOP},
+    {JMP, &syscall41, NOP},
+    {JMP, &syscall42, NOP},
+    {JMP, &syscall43, NOP},
+    {JMP, &syscall44, NOP},
+    {JMP, &syscall45, NOP},
+    {JMP, &syscall46, NOP},
+    {JMP, &syscall47, NOP},
+    {JMP, &syscall48, NOP},
+    {JMP, &syscall49, NOP},
+    {JMP, &syscall50, NOP},
+    {JMP, &syscall51, NOP},
+    {JMP, &syscall52, NOP},
+    {JMP, &syscall53, NOP},
+    {JMP, &syscall54, NOP},
+    {JMP, &syscall55, NOP},
+    {JMP, &syscall56, NOP},
+    {JMP, &syscall57, NOP},
+    {JMP, &syscall58, NOP},
+    {JMP, &syscall59, NOP},
+    {JMP, &syscall60, NOP},
+    {JMP, &syscall61, NOP},
+    {JMP, &syscall62, NOP},
+    {JMP, &syscall63, NOP},
+    {JMP, &syscall64, NOP}};
+export align(0x100) struct SysCall[] TRAPS = {
+
+    {JMP, &RESET, NOP},
+    {JMP, &PAGFAULT, NOP},
+    {JMP, &RESTORKEY, NOP},
+    {JMP, &ALTTABKEY, NOP},
+    {JMP, &VF011RD, NOP},
+    {JMP, &VF011WR, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &undefined_trap, NOP},
+    {JMP, &CPUKIL, NOP}};
