@@ -1,0 +1,96 @@
+// Message structure: 16 bytes in total
+struct ipc_message
+{
+	unsigned char from;
+	unsigned char to;
+	unsigned char priority;
+	unsigned char sequence;
+	unsigned char[12] message;
+};
+
+struct ipc_message[1] ipc_buffer;
+struct ipc_message *ipc_read()
+{
+	enable_syscalls();
+	*(unsigned char *)$D649 = $00;
+	asm { nop }
+	// Copy returned structure in to return buffer
+	unsigned char *a = (unsigned char *)ipc_buffer;
+	unsigned char *b = (unsigned char *)$0300;
+	for (unsigned char i = 0; i < 16; i++)
+		a[i] = b[i];
+	// Return address of return buffer
+	return ipc_buffer;
+}
+
+/*
+  Write to $D64A to trigger SYSCALL $0A after copying the message details to the transfer area beginning at $0300.
+ */
+void ipc_send(unsigned char to, unsigned char priority,
+			  unsigned char sequence_number, unsigned char *message)
+{
+	unsigned char *a = (unsigned char *)ipc_buffer;
+	ipc_buffer->from = 0;
+	ipc_buffer->to = to;
+	ipc_buffer->priority = priority;
+	ipc_buffer->sequence = sequence_number;
+	unsigned char *temp = ipc_buffer->message;
+	for (unsigned char i = 0; i < 12; i++)
+		temp[i] = message[i];
+	unsigned char *b = (unsigned char *)$300;
+	for (unsigned char i = 0; i < 16; i++)
+		b[i] = a[i];
+	enable_syscalls();
+	*(unsigned char *)$D64A = $00;
+	asm { nop }
+}
+
+void enable_syscalls()
+{
+	*(unsigned char *)$D02F = $47;
+	*(unsigned char *)$D02F = $53;
+}
+
+void process_info()
+{
+	enable_syscalls();
+	*(unsigned char *)$D643 = $00;
+	asm { nop }
+}
+
+void end_program()
+{
+	enable_syscalls();
+	*(unsigned char *)$D644 = $00;
+	asm { nop }
+}
+
+void yield()
+{
+	enable_syscalls();
+	*(unsigned char *)$D645 = $00;
+	asm { nop }
+}
+
+void showpid()
+{
+	enable_syscalls();
+	*(unsigned char *)$D646 = $00;
+	asm { nop }
+}
+
+unsigned char fork()
+{
+	enable_syscalls();
+	*(unsigned char *)$D647 = $00;
+	asm { nop }
+	return *(unsigned char *)$0300;
+}
+
+void exec(char *program_name)
+{
+	// Copy the program_name argument to the transfer area at $0300
+	enable_syscalls();
+	*(unsigned char *)$D648 = $00;
+	asm { nop }
+}

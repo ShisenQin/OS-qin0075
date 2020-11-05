@@ -1,0 +1,29 @@
+parsing
+flex pass 1
+flex pass 2
+flex pass 3
+Output pass
+Writing prg file: os6.2.bin
+Writing prg file: /home/student/repo/unit6/os6.2.prg
+
+Memory Map
+----------
+Default-segment:
+  $2000-$201d Default
+
+XMega65Bin-segment:
+
+Syscall-segment:
+  $8000-$81c3 Syscall
+
+Code-segment:
+  $8200-$8e3f Code
+
+Data-segment:
+  $8e40-$8f1d Data
+
+Stack-segment:
+
+Zeropage-segment:
+
+Writing Vice symbol file: /home/student/repo/unit6/os6.2.vs

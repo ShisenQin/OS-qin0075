@@ -1,0 +1,8 @@
+import "osabi"
+
+void main()
+{
+  ipc_send(1,1,1,"cpoint 6.2  ");
+    
+  while(true) yield();
+}

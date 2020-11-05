@@ -1,0 +1,14 @@
+al C:858 .msg
+al C:849 .enable_syscalls
+al C:854 .a
+al C:2 .__3
+al C:300 .b
+al C:812 .__b1__0
+al C:83a .__b1__1
+al C:80b .upstartEnd
+al C:80d .main
+al C:819 .__b2__0
+al C:83f .__b2__1
+al C:830 .ipc_read
+al C:854 .ipc_buffer
+al C:816 .__b3
